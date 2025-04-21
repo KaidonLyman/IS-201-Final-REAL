@@ -1,0 +1,29 @@
+p{
+    font-weight: bold;
+}
+
+#top{
+    text-decoration: underline;
+}
+
+.emphasizedText{
+    font-style: italic;
+    color:blueviolet;
+}
+
+body{
+    background-color: burlywood;
+    font-family: fantasy;
+    text-align: center;
+    border: 5px solid black;
+    margin: 20px;
+    padding: 10px;
+}
+
+.centerlist{
+    padding-left: 0;
+    list-style-position: outside;
+    margin: 0 auto;
+    display: table;
+    text-align: left;
+}

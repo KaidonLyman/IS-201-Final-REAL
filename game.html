@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ping Pong Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #1a1a1a;
+      font-family: 'Arial', sans-serif;
+      color: white;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 20px 0;
+      color: #ffcc00;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    #score {
+      font-size: 20px;
+      margin-bottom: 15px;
+    }
+
+    #message {
+      font-size: 24px;
+      margin: 20px;
+      font-weight: bold;
+      color: #00ffcc;
+    }
+
+    #playAgainBtn {
+      display: none;
+      padding: 10px 20px;
+      background-color: #ff3399;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #playAgainBtn:hover {
+      background-color: #ff66b2;
+    }
+
+    .game-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      padding: 10px;
+    }
+
+    .side-graphic {
+      width: 60px;
+      height: 400px;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Ping_pong_ball.svg/1024px-Ping_pong_ball.svg.png') center/contain no-repeat;
+    }
+
+    canvas {
+      background: #333;
+      border: 4px solid white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #000;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>THE ULTIMATE AI VS IS 201 STUDENT PING PONG CHAMPIONSHIP</h1>
+  <div id="score">
+    <span id="playerScore">Player: 0</span> |
+    <span id="aiScore">AI: 0</span>
+  </div>
+  <div id="message"></div>
+  <button id="playAgainBtn" onclick="resetGame()">Play Again</button>
+  <div class="game-container">
+    <div class="side-graphic"></div>
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <div class="side-graphic"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const messageEl = document.getElementById("message");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+
+    let playerScore = 0;
+    let aiScore = 0;
+    let pointCount = 0;
+    let gameOver = false;
+    let aiWillMissNext = false;
+
+    const paddleHeight = 100;
+    const paddleWidth = 10;
+    let playerY = canvas.height / 2 - paddleHeight / 2;
+    let aiY = canvas.height / 2 - paddleHeight / 2;
+    const paddleSpeed = 6;
+
+    let ballX = canvas.width / 2;
+    let ballY = canvas.height / 2;
+    const ballSize = 10;
+    let ballSpeedX = 5;
+    let ballSpeedY = 3;
+
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function drawBall(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function resetBall() {
+      ballX = canvas.width / 2;
+      ballY = canvas.height / 2;
+      ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * 5;
+      ballSpeedY = (Math.random() - 0.5) * 6;
+
+      // Decide if AI should miss next point
+      aiWillMissNext = pointCount % 2 === 0;
+    }
+
+    function updateScore() {
+      document.getElementById("playerScore").textContent = `Player: ${playerScore}`;
+      document.getElementById("aiScore").textContent = `AI: ${aiScore}`;
+    }
+
+    function showEndMessage(text) {
+      messageEl.textContent = text;
+      playAgainBtn.style.display = "inline-block";
+      gameOver = true;
+    }
+
+    function resetGame() {
+      playerScore = 0;
+      aiScore = 0;
+      pointCount = 0;
+      gameOver = false;
+      playAgainBtn.style.display = "none";
+      messageEl.textContent = "";
+      resetBall();
+      gameLoop();
+    }
+
+    function gameLoop() {
+      if (gameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Move ball
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+
+      // Bounce off top/bottom
+      if (ballY < 0 || ballY > canvas.height) ballSpeedY *= -1;
+
+      // AI movement
+      const aiCenter = aiY + paddleHeight / 2;
+      const aiSpeed = aiWillMissNext ? 1 : paddleSpeed;
+      if (aiCenter < ballY - 35) aiY += aiSpeed;
+      else if (aiCenter > ballY + 35) aiY -= aiSpeed;
+
+      // Player collision
+      if (
+        ballX < paddleWidth &&
+        ballY > playerY &&
+        ballY < playerY + paddleHeight
+      ) {
+        ballSpeedX *= -1;
+        ballX = paddleWidth;
+      }
+
+      // AI collision
+      if (
+        ballX > canvas.width - paddleWidth &&
+        ballY > aiY &&
+        ballY < aiY + paddleHeight &&
+        !aiWillMissNext
+      ) {
+        ballSpeedX *= -1;
+        ballX = canvas.width - paddleWidth;
+      }
+
+      // Score check
+      if (ballX < 0) {
+        aiScore++;
+        pointCount++;
+        resetBall();
+      } else if (ballX > canvas.width) {
+        playerScore++;
+        pointCount++;
+        resetBall();
+      }
+
+      // Clamp paddles
+      playerY = Math.max(0, Math.min(canvas.height - paddleHeight, playerY));
+      aiY = Math.max(0, Math.min(canvas.height - paddleHeight, aiY));
+
+      // Draw paddles and ball
+      drawRect(0, playerY, paddleWidth, paddleHeight, "#00c6ff");
+      drawRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight, "#ff3399");
+      drawBall(ballX, ballY, ballSize, "#00ffcc");
+
+      updateScore();
+
+      if (playerScore >= 3) {
+        showEndMessage("🎉 Congrats, you won!");
+      } else if (aiScore >= 3) {
+        showEndMessage("💀 You lost. You suck.");
+      } else {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    // Keyboard
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp") playerY -= paddleSpeed * 3;
+      if (e.key === "ArrowDown") playerY += paddleSpeed * 3;
+    });
+
+    // Touch
+    let isTouching = false;
+    let touchStartY = 0;
+
+    canvas.addEventListener("touchstart", e => {
+      isTouching = true;
+      touchStartY = e.touches[0].clientY;
+    });
+
+    canvas.addEventListener("touchmove", e => {
+      if (!isTouching) return;
+      const touchY = e.touches[0].clientY;
+      const delta = touchY - touchStartY;
+      playerY += delta;
+      touchStartY = touchY;
+    });
+
+    canvas.addEventListener("touchend", () => {
+      isTouching = false;
+    });
+
+    // Start the game
+    resetBall();
+    gameLoop();
+  </script>
+</body>
+</html>
